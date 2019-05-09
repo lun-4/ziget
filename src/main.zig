@@ -18,4 +18,13 @@ pub fn main() anyerror!void {
         std.debug.warn("no url provided\n");
         return error.InvalidArgs;
     });
+
+    // TODO: do parsing of url to give it as default for output path
+
+    const path = try (args_it.next(allocator) orelse {
+        std.debug.warn("no path provided\n");
+        return error.InvalidArgs;
+    });
+
+    std.debug.warn("url: {} output path: {}\n", url, path);
 }
