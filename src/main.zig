@@ -6,6 +6,7 @@ const c = @cImport({
     @cInclude("sys/socket.h");
     @cInclude("netinet/in.h");
     @cInclude("arpa/inet.h");
+    @cInclude("netdb.h");
     @cInclude("stdio.h");
 });
 
@@ -45,8 +46,8 @@ pub fn main() anyerror!void {
 
     std.debug.warn("host: {} remote: {} output path: {}\n", host, remote_path, output_path);
 
-    // for some reason c.SOCK_STREAM doesn't work because of typing
-    var sock = c.socket(c.AF_INET, 2, 0);
+    //var sock = std.os.linux.socket(std.os.linux.AF_INET, std.os.linux.SOCK_STREAM, 0);
+    var sock = c.socket(c.AF_INET, std.os.linux.SOCK_STREAM, 0);
     if (sock < 0) {
         std.debug.warn("failed to create socket\n");
         return ZigetError.CreateSockFail;
@@ -54,25 +55,18 @@ pub fn main() anyerror!void {
 
     std.debug.warn("sock fd: {}\n", sock);
 
-    // make addr struct
     var addr: c.struct_sockaddr_in = undefined;
 
-    addr.sin_family = c.AF_INET;
-    addr.sin_port = c.htons(80);
+    // TODO: convert given host to cstr
+    var host_c = c"1.1.1.1";
 
-    var host_c: [*c]const u8 = @ptrCast([*c]const u8, &host);
+    _ = c.printf(c"host_c = '%s'\n", host_c);
 
-    _ = c.printf(c"host_c from c: '%s'\n", host_c);
-
-    if (c.inet_pton(c.AF_INET, host_c, &addr.sin_addr) <= 0) {
+    if (c.inet_pton(std.os.linux.AF_INET, host_c, &addr.sin_addr) <= 0) {
         return ZigetError.InvalidAddr;
     }
 
-    var addr_c: [*c]const c.struct_sockaddr = @ptrCast([*c]const c.struct_sockaddr, &addr);
-
-    if (c.connect(sock, addr_c, @sizeOf(c.struct_sockaddr_in)) < 0) {
+    if (std.os.linux.connect(sock, &addr, @sizeOf(c.struct_sockaddr_in)) < 0) {
         return ZigetError.ConnectError;
     }
-
-    std.debug.warn("owo???\n");
 }
