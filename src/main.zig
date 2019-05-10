@@ -14,6 +14,8 @@ const ZigetError = error{
     CreateSockFail,
     InvalidAddr,
     ConnectError,
+    SendError,
+    RecvError,
 };
 
 pub fn main() anyerror!void {
@@ -69,4 +71,19 @@ pub fn main() anyerror!void {
     if (std.os.linux.connect(sock, &addr, @sizeOf(c.struct_sockaddr_in)) < 0) {
         return ZigetError.ConnectError;
     }
+
+    //const msg = c"HTTP/1.0 GET /\r\n\r\n";
+    var msg = c"HTTP/1.0 GET /\r\n\r\n";
+
+    if (c.write(sock, msg, 255) < 0) {
+        return ZigetError.SendError;
+    }
+
+    var buf: [255]u8 = undefined;
+
+    if (std.os.linux.read(sock, &buf, 255) < 0) {
+        return ZigetError.RecvError;
+    }
+
+    std.debug.warn("buf = '{}'\n", buf);
 }
