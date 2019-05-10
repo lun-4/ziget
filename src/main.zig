@@ -87,7 +87,7 @@ pub fn main() anyerror!void {
     var buf: [255]u8 = undefined;
     std.debug.warn("reading\n");
 
-    if (std.os.linux.read(sock, &buf, 255) < 0) {
+    if (c.recv(sock, &buf, 255, 0) < 0) {
         return ZigetError.RecvError;
     }
     std.debug.warn("read done\n");
