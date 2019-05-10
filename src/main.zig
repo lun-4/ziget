@@ -68,22 +68,29 @@ pub fn main() anyerror!void {
         return ZigetError.InvalidAddr;
     }
 
-    if (std.os.linux.connect(sock, &addr, @sizeOf(c.struct_sockaddr_in)) < 0) {
+    if (std.os.linux.connect(sock, &addr, @sizeOf(c.struct_sockaddr_in)) <= 0) {
         return ZigetError.ConnectError;
     }
 
-    //const msg = c"HTTP/1.0 GET /\r\n\r\n";
     var msg = c"HTTP/1.0 GET /\r\n\r\n";
+    _ = c.printf(c"msg: '%s'\n", msg);
 
-    if (c.write(sock, msg, 255) < 0) {
+    _ = c.printf(c"sending\n");
+    var sent_bytes = c.send(sock, msg, 255, 0);
+    _ = c.printf(c"sent %d bytes\n", sent_bytes);
+
+    if (sent_bytes <= 0) {
         return ZigetError.SendError;
     }
+    std.debug.warn("sent\n");
 
     var buf: [255]u8 = undefined;
+    std.debug.warn("reading\n");
 
     if (std.os.linux.read(sock, &buf, 255) < 0) {
         return ZigetError.RecvError;
     }
+    std.debug.warn("read done\n");
 
     std.debug.warn("buf = '{}'\n", buf);
 }
