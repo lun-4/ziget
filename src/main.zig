@@ -1,15 +1,6 @@
 const std = @import("std");
 const os = std.os;
 
-const c = @cImport({
-    @cInclude("sys/types.h");
-    @cInclude("sys/socket.h");
-    @cInclude("netinet/in.h");
-    @cInclude("arpa/inet.h");
-    @cInclude("netdb.h");
-    @cInclude("stdio.h");
-});
-
 const ZigetError = error{
     CreateSockFail,
     InvalidAddr,
@@ -48,49 +39,24 @@ pub fn main() anyerror!void {
 
     std.debug.warn("host: {} remote: {} output path: {}\n", host, remote_path, output_path);
 
-    //var sock = std.os.linux.socket(std.os.linux.AF_INET, std.os.linux.SOCK_STREAM, 0);
-    var sock = c.socket(c.AF_INET, std.os.linux.SOCK_STREAM, 0);
-    if (sock < 0) {
-        std.debug.warn("failed to create socket\n");
-        return ZigetError.CreateSockFail;
-    }
+    var sockfd = try std.os.posixSocket(std.os.linux.AF_INET, std.os.linux.SOCK_STREAM, 0);
+    std.debug.warn("sock fd: {}\n", sockfd);
 
-    std.debug.warn("sock fd: {}\n", sock);
+    var ip4addr = try std.net.parseIp4(host);
+    var addr = std.net.Address.initIp4(ip4addr, 80);
+    const const_addr = &addr.os_addr;
+    try std.os.posixConnect(sockfd, const_addr);
 
-    var addr: c.struct_sockaddr_in = undefined;
+    var buffer: [256]u8 = undefined;
+    const base_http = "GET {} HTTP/1.1\r\nHost: {}\r\nConnection: close\r\n\r\n";
+    var msg = try std.fmt.bufPrint(&buffer, base_http, remote_path, host);
 
-    // TODO: convert given host to cstr
-    var host_c = c"1.1.1.1";
+    try std.os.posixWrite(sockfd, msg);
 
-    _ = c.printf(c"host_c = '%s'\n", host_c);
+    // TODO: read more
+    var buf: [1024]u8 = undefined;
+    var read_bytes = try std.os.posixRead(sockfd, &buf);
 
-    if (c.inet_pton(std.os.linux.AF_INET, host_c, &addr.sin_addr) <= 0) {
-        return ZigetError.InvalidAddr;
-    }
-
-    if (std.os.linux.connect(sock, &addr, @sizeOf(c.struct_sockaddr_in)) <= 0) {
-        return ZigetError.ConnectError;
-    }
-
-    var msg = c"HTTP/1.0 GET /\r\n\r\n";
-    _ = c.printf(c"msg: '%s'\n", msg);
-
-    _ = c.printf(c"sending\n");
-    var sent_bytes = c.send(sock, msg, 255, 0);
-    _ = c.printf(c"sent %d bytes\n", sent_bytes);
-
-    if (sent_bytes <= 0) {
-        return ZigetError.SendError;
-    }
-    std.debug.warn("sent\n");
-
-    var buf: [255]u8 = undefined;
-    std.debug.warn("reading\n");
-
-    if (c.recv(sock, &buf, 255, 0) < 0) {
-        return ZigetError.RecvError;
-    }
-    std.debug.warn("read done\n");
-
+    std.debug.warn("read {} bytes\n", read_bytes);
     std.debug.warn("buf = '{}'\n", buf);
 }
