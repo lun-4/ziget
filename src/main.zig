@@ -13,7 +13,7 @@ pub fn main() anyerror!void {
     var underlying_allocator = std.heap.c_allocator;
 
     var arena = std.heap.ArenaAllocator.init(underlying_allocator);
-    errdefer arena.deinit();
+    defer arena.deinit();
 
     var allocator = &arena.allocator;
     var args_it = os.args();
@@ -40,6 +40,7 @@ pub fn main() anyerror!void {
     std.debug.warn("host: {} remote: {} output path: {}\n", host, remote_path, output_path);
 
     var sockfd = try os.posixSocket(os.linux.AF_INET, os.linux.SOCK_STREAM, 0);
+    defer os.close(sockfd);
 
     // TODO: find a way to call gethostbyname() or some other way to DNS,
     // prefferably without libc
@@ -61,6 +62,7 @@ pub fn main() anyerror!void {
     var total_bytes: usize = 0;
 
     var file = try os.File.openWrite(output_path);
+    defer file.close();
 
     while (true) {
         byte_count = try std.os.posixRead(sockfd, &buf);
