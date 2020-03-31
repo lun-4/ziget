@@ -37,13 +37,7 @@ pub fn main() anyerror!void {
 
     std.debug.warn("host: {} remote: {} output path: {}\n", .{ host, remote_path, output_path });
 
-    var sockfd = try os.socket(os.linux.AF_INET, os.linux.SOCK_STREAM, 0);
-    defer os.close(sockfd);
-
-    // TODO: find a way to call gethostbyname() or some other way to DNS,
-    // prefferably without libc
-    var addr = try std.net.Address.parseIp(host, 80);
-    var conn = try std.net.tcpConnectToAddress(addr);
+    var conn = try std.net.tcpConnectToHost(allocator, host, 80);
     defer conn.close();
 
     var buffer: [256]u8 = undefined;
