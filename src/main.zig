@@ -35,13 +35,13 @@ pub fn main() anyerror!void {
         return error.InvalidArgs;
     });
 
-    std.debug.warn("host: {} remote: {} output path: {}\n", .{ host, remote_path, output_path });
+    std.debug.warn("host: {s} remote: {s} output path: {s}\n", .{ host, remote_path, output_path });
 
     var conn = try std.net.tcpConnectToHost(allocator, host, 80);
     defer conn.close();
 
     var buffer: [256]u8 = undefined;
-    const base_http = "GET {} HTTP/1.1\r\nHost: {}\r\nConnection: close\r\n\r\n";
+    const base_http = "GET {s} HTTP/1.1\r\nHost: {s}\r\nConnection: close\r\n\r\n";
     var msg = try std.fmt.bufPrint(&buffer, base_http, .{ remote_path, host });
 
     _ = try conn.write(msg);
@@ -60,5 +60,5 @@ pub fn main() anyerror!void {
         total_bytes += byte_count;
     }
 
-    std.debug.warn("written {} bytes to file '{}'\n", .{ total_bytes, output_path });
+    std.debug.warn("written {any} bytes to file '{s}'\n", .{ total_bytes, output_path });
 }
