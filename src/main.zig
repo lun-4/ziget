@@ -10,38 +10,38 @@ const ZigetError = error{
 };
 
 pub fn main() anyerror!void {
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer arena.deinit();
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
 
-    var allocator = &arena.allocator;
+    var allocator = gpa.allocator();
     var args_it = std.process.args();
 
     // skip args[0]
 
     _ = args_it.skip();
 
-    const host = try (args_it.next(allocator) orelse {
-        std.debug.warn("no host provided\n", .{});
+    const host = (args_it.next() orelse {
+        std.debug.print("no host provided\n", .{});
         return error.InvalidArgs;
     });
 
-    const remote_path = try (args_it.next(allocator) orelse {
-        std.debug.warn("no remote path provided\n", .{});
+    const remote_path = (args_it.next() orelse {
+        std.debug.print("no remote path provided\n", .{});
         return error.InvalidArgs;
     });
 
-    const output_path = try (args_it.next(allocator) orelse {
-        std.debug.warn("no path provided\n", .{});
+    const output_path = (args_it.next() orelse {
+        std.debug.print("no path provided\n", .{});
         return error.InvalidArgs;
     });
 
-    std.debug.warn("host: {} remote: {} output path: {}\n", .{ host, remote_path, output_path });
+    std.debug.print("host: {s} remote: {s} output path: {s}\n", .{ host, remote_path, output_path });
 
     var conn = try std.net.tcpConnectToHost(allocator, host, 80);
     defer conn.close();
 
     var buffer: [256]u8 = undefined;
-    const base_http = "GET {} HTTP/1.1\r\nHost: {}\r\nConnection: close\r\n\r\n";
+    const base_http = "GET {s} HTTP/1.1\r\nHost: {s}\r\nConnection: close\r\n\r\n";
     var msg = try std.fmt.bufPrint(&buffer, base_http, .{ remote_path, host });
 
     _ = try conn.write(msg);
@@ -60,5 +60,5 @@ pub fn main() anyerror!void {
         total_bytes += byte_count;
     }
 
-    std.debug.warn("written {} bytes to file '{}'\n", .{ total_bytes, output_path });
+    std.debug.print("written {d} bytes to file '{s}'\n", .{ total_bytes, output_path });
 }
