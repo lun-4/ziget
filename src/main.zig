@@ -13,7 +13,7 @@ pub fn main() anyerror!void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
 
-    var allocator = gpa.allocator();
+    const allocator = gpa.allocator();
     var args_it = std.process.args();
 
     // skip args[0]
@@ -42,7 +42,7 @@ pub fn main() anyerror!void {
 
     var buffer: [256]u8 = undefined;
     const base_http = "GET {s} HTTP/1.1\r\nHost: {s}\r\nConnection: close\r\n\r\n";
-    var msg = try std.fmt.bufPrint(&buffer, base_http, .{ remote_path, host });
+    const msg = try std.fmt.bufPrint(&buffer, base_http, .{ remote_path, host });
 
     _ = try conn.write(msg);
 
