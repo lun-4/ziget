@@ -14,7 +14,8 @@ pub fn main() anyerror!void {
     defer _ = gpa.deinit();
 
     const allocator = gpa.allocator();
-    var args_it = std.process.args();
+    var args_it = try std.process.argsWithAllocator(allocator);
+    defer args_it.deinit();
 
     // skip args[0]
 
